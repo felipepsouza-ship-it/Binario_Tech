@@ -1,20 +1,17 @@
-
-  "name": "binario_tech",
+{
+  "name": "aula13",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://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@github.com/felipepsouza-ship-it/Binario_Tech.git"
-  },
+  "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/felipepsouza-ship-it/Binario_Tech/issues"
-  },
-  "homepage": "https://github.com/felipepsouza-ship-it/Binario_Tech#readme",
-  "keywords": [],
-  "description": ""
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2"
+  }
 }
