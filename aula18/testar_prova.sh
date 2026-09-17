@@ -1,26 +1,43 @@
 #!/bin/bash
-echo "===================================================="
-echo " AUDITORIA DE AUTENTICAÇÃO JWT - AULA 14"
-echo "===================================================="
 
-echo -e "\n[1] Registrando novo Usuário Operador..."
-curl -s -X POST http://localhost:3010/api/v1/authI/register \
+BASE_URL="http://localhost:3000/api/v1/prova"
+EMAIL="aluno_prova_$RANDOM@binario.tech"
+SENHA="senhaSegura123"
+
+echo "=================================================="
+echo "      TESTE AUTOMATIZADO DA PROVA - AULA 18"
+echo "=================================================="
+echo ""
+
+echo "[1/3] Cadastrando novo usuário ($EMAIL)..."
+CADASTRO_RES=$(curl -s -X POST "$BASE_URL/register" \
   -H "Content-Type: application/json" \
-  -d '{ "email": "operador@binariotech.com.br", "senha": "SenhaSegura123!", "perfil": "ADMIN" }' | jq .
+  -d "{\"email\": \"$EMAIL\", \"senha\": \"$SENHA\"}")
+echo "$CADASTRO_RES" | jq .
+echo ""
 
-echo -e "\n[2] Realizando Login e obtendo JWT..."
-LOGIN_RESP=$(curl -s -X POST http://localhost:3010/api/v1/auth/login \
+echo "[2/3] Efetuando login e obtendo Token JWT..."
+LOGIN_RES=$(curl -s -X POST "$BASE_URL/login" \
   -H "Content-Type: application/json" \
-  -d '{ "email": "operador@binariotech.com.br", "senha": "SenhaSegura123!" }')
+  -d "{\"email\": \"$EMAIL\", \"senha\": \"$SENHA\"}")
 
-echo $LOGIN_RESP | jq .
+TOKEN=$(echo "$LOGIN_RES" | jq -r '.token')
 
-TOKEN=$(echo $LOGIN_RESP | jq -r '.token')
+if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+  echo "[ERRO] Falha ao obter o token no login."
+  echo "$LOGIN_RES" | jq .
+  exit 1
+fi
 
-echo -e "\n[3] Tentando acessar Rota Protegida SEM Token (Esperado HTTP 401)..."
-curl -s http://localhost:3010/api/v1/auth/perfil | jq .
+echo "Token obtido com sucesso: ${TOKEN:0:25}..."
+echo ""
 
-echo -e "\n[4] Acessando Rota Protegida COM Token JWT Válido (Esperado HTTP 200)..."
-curl -s http://localhost:3010/api/v1/auth/perfil \
-  -H "Authorization: Bearer $TOKEN" | jq .
+echo "[3/3] Acessando Rota Protegida (/relatorio) com o Token JWT..."
+RELATORIO_RES=$(curl -s -X GET "$BASE_URL/relatorio" \
+  -H "Authorization: Bearer $TOKEN")
 
+echo "$RELATORIO_RES" | jq .
+echo ""
+echo "=================================================="
+echo "              TESTES CONCLUÍDOS!"
+echo "=================================================="
