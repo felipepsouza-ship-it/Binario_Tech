@@ -1,0 +1,31 @@
+=== 1. POST (Veiculo 1) ===
+{
+  "id": 3,
+  "placa": "ABC-1234",
+  "montadora": "Scania",
+  "modelo": "R450",
+  "status": "DISPONIVEL"
+}
+=== 2. POST (Veiculo 2) ===
+{
+  "id": 4,
+  "placa": "XYZ-9876",
+  "montadora": "Mercedes-Benz",
+  "modelo": "Actros",
+  "status": "DISPONIVEL"
+}
+=== 3. PATCH (Atualizar Status Veiculo 1) ===
+{
+  "mensagem": "Status atualizado com sucesso!",
+  "veiculo": {
+    "id": 1,
+    "placa": "AAA-9999",
+    "montadora": "Volvo",
+    "modelo": "FH 540",
+    "status": "MANUTENCAO"
+  }
+}
+=== 4. DELETE (Remover Veiculo 2) ===
+{
+  "mensagem": "Veiculo ID 2 removido com sucesso."
+}
