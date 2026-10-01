@@ -3,7 +3,7 @@ echo "=================================================="
 echo "    PIPELINE DE DEPLOY AUTOMATIZADO - BINÁRIO TECH"
 echo "=================================================="
 
-REPO_DIR="$HOME/binario_tech"
+REPO_DIR="$HOME/curso-pbe1/binario_tech"
 APP_NAME="api-cicd"
 PORT=3002
 
@@ -13,7 +13,7 @@ git pull origin main
 
 echo "[2/4] Verificando e instalando novas dependências..."
 cd $REPO_DIR/aula21
-npm install --production
+npm install --omit=dev
 
 echo "[3/4] Reiniciando aplicação no PM2..."
 pm2 restart $APP_NAME
@@ -24,6 +24,12 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/api/
 
 if [ "$HTTP_STATUS" -eq 200 ]; then
   echo -e "\n[SUCESSO] Deploy realizado e verificado com sucesso! HTTP Status 200."
+  
+  # EXERCÍCIO 2: Gravando histórico de deploy
+  COMMIT_HASH=$(git rev-parse --short HEAD)
+  DATA_HORA=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[$DATA_HORA] Deploy realizado com sucesso. Commit: $COMMIT_HASH" >> $REPO_DIR/aula21/deploy_history.log
+  
   pm2 list | grep $APP_NAME
 else
   echo -e "\n[FALHA] Smoke Test falhou com status $HTTP_STATUS! Verifique os logs do PM2."
@@ -31,4 +37,3 @@ else
   exit 1
 fi
 echo "=================================================="
-
