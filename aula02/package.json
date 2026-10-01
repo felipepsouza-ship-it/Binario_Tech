@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {"name":"aula2",
 	"version":"1.0.0",
 	"main":"index.js",
@@ -11,3 +12,25 @@
 	"author":",
 	"license":"ISC",
 	"description":""}
+=======
+{
+  "name": "aula2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check": "node -v"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
+>>>>>>> 5420017f504226b9600f060c20987354e5f0544a

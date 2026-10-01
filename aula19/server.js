@@ -1,7 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+<<<<<<< HEAD
 const PORT = process.env.PORT || 3000;
+=======
+const PORT = process.env.PORT || 3010;
+>>>>>>> 5420017f504226b9600f060c20987354e5f0544a
 
 app.use(express.json());
 
@@ -28,3 +32,7 @@ app.get('/api/v1/telemetria/crash', (req, res) => {
 app.listen(PORT, () => {
   console.log(`[Binário Tech] Microserviço ativo na porta ${PORT} (PID: ${process.pid})`);
 });
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5420017f504226b9600f060c20987354e5f0544a
