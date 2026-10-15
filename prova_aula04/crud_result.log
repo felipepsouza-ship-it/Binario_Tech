@@ -1,0 +1,23 @@
+--- INICIANDO TESTES CRUD ---
+qui 15 out 2026 14:23:22 -03
+{
+  "id": 7,
+  "placa": "AAA-1111",
+  "montadora": "Ford",
+  "modelo": "Cargo",
+  "status": "DISPONIVEL"
+}
+{
+  "id": 8,
+  "placa": "BBB-2222",
+  "montadora": "Iveco",
+  "modelo": "Daily",
+  "status": "DISPONIVEL"
+}
+{
+  "erro": "Veiculo nao encontrado."
+}
+{
+  "erro": "Veiculo nao encontrado."
+}
+--- TESTES CONCLUÍDOS ---
