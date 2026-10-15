@@ -1,0 +1,344 @@
+Guia para a prova.
+
+Índice
+
+1. Preparação do ambiente 
+2. Código Principal da API (frota_api.js).
+3. Exemplos de Requisições HTTP via CURL
+4. Bateria de Exercícios e Soluções Práticas
+
+1. Preparação do ambiente
+Para iniciar o projeto no terminal (Servidor Linux)
+
+CÓDIGOS:
+
+cd ~/binario_tech
+mkdir -p aula04
+cd aula04
+npm init -y
+npm install express 
+
+-----------------------------------------------------------------
+
+Código Principal da API (frota_api.js) 
+
+const express = require('express');
+const app = express();
+const PORT = 3000;
+
+app.use(express.json());
+
+// Banco de dados em memoria
+let veiculos = [
+    { id: 1, placa: "ABC-1234", montadora: "Scania", modelo: "R450", status: "DISPONIVEL" },
+    { id: 2, placa: "XYZ-9876", montadora: "Mercedes-Benz", modelo: "Actros", status: "EM_ROTA" }
+];
+
+// 1. GET /api/v1/veiculos - Listar todos os veiculos (Suporta filtro por status query param)
+app.get('/api/v1/veiculos', (req, res) => {
+    const { status } = req.query;
+    if (status) {
+        const filtrados = veiculos.filter(v => v.status.toUpperCase() === status.toUpperCase());
+        return res.status(200).json(filtrados);
+    }
+    res.status(200).json(veiculos);
+});
+
+// 2. GET /api/v1/veiculos/:id - Buscar veiculo por ID
+app.get('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const veiculo = veiculos.find(v => v.id === id);
+    if (!veiculo) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado na base de dados." });
+    }
+    res.status(200).json(veiculo);
+});
+
+// 3. POST /api/v1/veiculos - Cadastrar novo veiculo (Criacao)
+app.post('/api/v1/veiculos', (req, res) => {
+    const { placa, montadora, modelo } = req.body;
+    if (!placa || !montadora || !modelo) {
+        return res.status(400).json({ erro: "Campos 'placa', 'montadora' e 'modelo' sao obrigatorios." });
+    }
+    const novoVeiculo = {
+        id: veiculos.length + 1,
+        placa,
+        montadora,
+        modelo,
+        status: "DISPONIVEL"
+    };
+    veiculos.push(novoVeiculo);
+    res.status(201).json(novoVeiculo);
+});
+
+// 4. PATCH /api/v1/veiculos/:id/status - Atualizar status do veiculo
+app.patch('/api/v1/veiculos/:id/status', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    const veiculo = veiculos.find(v => v.id === id);
+    
+    if (!veiculo) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    if (!status) {
+        return res.status(400).json({ erro: "O campo 'status' e obrigatorio." });
+    }
+
+    veiculo.status = status.toUpperCase();
+    res.status(200).json({ mensagem: "Status atualizado com sucesso!", veiculo });
+});
+
+// 5. DELETE /api/v1/veiculos/:id - Remover veiculo da frota
+app.delete('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = veiculos.findIndex(v => v.id === id);
+    if (index === -1) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    veiculos.splice(index, 1);
+    res.status(200).json({ mensagem: `Veiculo ID ${id} removido com sucesso.` });
+});
+
+app.listen(PORT, () => {
+    console.log(`[Binario Tech] API de Frotas rodando em http://localhost:${PORT}`);
+});
+
+------------------------------------------------------------------------------------------------------
+
+3. Exemplos de Requisições HTTP via CURL 
+
+Iniciar o servidor em segundo plano:
+
+node frota_api.js &
+
+-------------------------------------------------------------------
+
+GET (Listar todos os veiculos):
+
+curl -s http://localhost:3010/api/v1/veiculos | jq .
+
+-------------------------------------------------------------------
+
+POST (Criar um novo veículo):
+
+curl -s -X POST http://localhost:3010/api/v1/veiculos \
+  -H "Content-Type: application/json" \
+  -d '{"placa":"VWX-5555","montadora":"Volkswagen","modelo":"Delivery"}' | jq .
+
+---------------------------------------------------------------------------------
+
+PATCH (Atualizar status de um veículo):
+
+curl -s -X PATCH http://localhost:3010/api/v1/veiculos/1/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"MANUTENCAO"}' | jq .
+
+-----------------------------------------------------------------------------------
+
+DELETE (Remover um veículo):
+
+curl -s -X DELETE http://localhost:3010/api/v1/veiculos/2 | jq .
+
+------------------------------------------------------------------------------------
+
+4. Bateria de Exercícios e Soluções Práticas:
+
+Exercício 01: Buscar veículo por ID específico
+
+curl -s http://localhost:3010/api/v1/veiculos/1 | jq .
+
+----------------------------------------------------------------------------------
+
+Exercício 02: Cadastrar caminhão Volvo (Status esperado: 201 Created)
+
+curl -s -X POST http://localhost:3010/api/v1/veiculos \
+  -H "Content-Type: application/json" \
+  -d '{"placa":"KLL-9090","montadora":"Volvo","modelo":"FH 540"}' | jq .
+
+---------------------------------------------------------------------------------------------
+
+Exercício 03: Testar validação de payload faltando dados (Status esperado: 400 Bad Request)
+
+curl -s -X POST http://localhost:3010/api/v1/veiculos \
+  -H "Content-Type: application/json" \
+  -d '{"montadora":"Volvo","modelo":"FH 540"}' | jq .
+
+-------------------------------------------------------------------------------------------------
+
+Exercício 04: Filtrar utilizando Query Params
+
+curl -s "http://localhost:3010/api/v1/veiculos?status=DISPONIVEL" | jq .
+
+-----------------------------------------------------------------------------------
+
+Exercício 05: Atualizar status do veículo de ID 3 para 'EM_ROTA'
+
+curl -s -X PATCH http://localhost:3010/api/v1/veiculos/3/status \
+  -H "Content-Type: application/json" \
+  -d '{"status":"EM_ROTA"}' | jq .
+
+---------------------------------------------------------------------------
+
+Exercício 06: Testar erro 404 (ID inexistente)
+
+curl -s http://localhost:3010/api/v1/veiculos/99 | jq .
+
+----------------------------------------------------------------------------------------------
+
+Exercício 07: Adicionar rota PUT (Substituição total)
+
+Cole este trecho dentro do seu frota_api.js se precisar implementar o PUT na prova:
+
+app.put('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { placa, montadora, modelo, status } = req.body;
+    const index = veiculos.findIndex(v => v.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    if (!placa || !montadora || !modelo || !status) {
+        return res.status(400).json({ erro: "Todos os campos sao obrigatorios para o PUT." });
+    }
+
+    veiculos[index] = { id, placa, montadora, modelo, status: status.toUpperCase() };
+    res.status(200).json(veiculos[index]);
+});
+
+Teste utilizando HTTP via CURL:
+
+curl -s -X PUT http://localhost:3010/api/v1/veiculos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"placa":"ZZZ-9999","montadora":"Volvo","modelo":"FH 540","status":"EM_ROTA"}' | jq .
+
+OBS: ESTE CÓDIGO DEVERA SER COLOCADO ENTRE O PATCH E O DELETE.
+
+-----------------------------------------------------------------------------------------------------
+
+Exercício 08: Script Bash de teste sequencial (teste_crud.sh)
+
+#!/bin/bash
+echo "--- INICIANDO TESTES CRUD ---" > crud_result.log
+
+# Cadastrar 2 veículos
+curl -s -X POST http://localhost:3010/api/v1/veiculos -H "Content-Type: application/json" -d '{"placa":"AAA-1111","montadora":"Ford","modelo":"Cargo"}' >> crud_result.log
+curl -s -X POST http://localhost:3010/api/v1/veiculos -H "Content-Type: application/json" -d '{"placa":"BBB-2222","montadora":"Iveco","modelo":"Daily"}' >> crud_result.log
+
+# Atualizar status do veículo 1
+curl -s -X PATCH http://localhost:3010/api/v1/veiculos/1/status -H "Content-Type: application/json" -d '{"status":"EM_ROTA"}' >> crud_result.log
+
+# Deletar veículo 2
+curl -s -X DELETE http://localhost:3010/api/v1/veiculos/2 >> crud_result.log
+
+echo "--- TESTES CONCLUÍDOS ---" >> crud_result.log
+
+Códigos para testar o arquivo teste_crud.sh:
+
+1. node frota_api.js &
+
+2. chmod +x teste_crud.sh
+
+3. ./teste_crud.sh
+
+4. cat crud_result.log
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CÓDIGO COMPLETO:
+
+const express = require('express');
+const app = express();
+const PORT = 3010; // Ajuste para 3010 se preferir usar essa porta no seu ambiente
+
+app.use(express.json());
+
+// Banco de dados em memoria
+let veiculos = [
+    { id: 1, placa: "ABC-1234", montadora: "Scania", modelo: "R450", status: "DISPONIVEL" },
+    { id: 2, placa: "XYZ-9876", montadora: "Mercedes-Benz", modelo: "Actros", status: "EM_ROTA" }
+];
+
+// 1. GET /api/v1/veiculos - Listar todos os veiculos (Suporta filtro por status query param)
+app.get('/api/v1/veiculos', (req, res) => {
+    const { status } = req.query;
+    if (status) {
+        const filtrados = veiculos.filter(v => v.status.toUpperCase() === status.toUpperCase());
+        return res.status(200).json(filtrados);
+    }
+    res.status(200).json(veiculos);
+});
+
+// 2. GET /api/v1/veiculos/:id - Buscar veiculo por ID
+app.get('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const veiculo = veiculos.find(v => v.id === id);
+    if (!veiculo) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado na base de dados." });
+    }
+    res.status(200).json(veiculo);
+});
+
+// 3. POST /api/v1/veiculos - Cadastrar novo veiculo (Criacao)
+app.post('/api/v1/veiculos', (req, res) => {
+    const { placa, montadora, modelo } = req.body;
+    if (!placa || !montadora || !modelo) {
+        return res.status(400).json({ erro: "Campos 'placa', 'montadora' e 'modelo' sao obrigatorios." });
+    }
+    const novoVeiculo = {
+        id: veiculos.length + 1,
+        placa,
+        montadora,
+        modelo,
+        status: "DISPONIVEL"
+    };
+    veiculos.push(novoVeiculo);
+    res.status(201).json(novoVeiculo);
+});
+
+// 4. PATCH /api/v1/veiculos/:id/status - Atualizar status do veiculo
+app.patch('/api/v1/veiculos/:id/status', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    const veiculo = veiculos.find(v => v.id === id);
+    
+    if (!veiculo) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    if (!status) {
+        return res.status(400).json({ erro: "O campo 'status' e obrigatorio." });
+    }
+
+    veiculo.status = status.toUpperCase();
+    res.status(200).json({ mensagem: "Status atualizado com sucesso!", veiculo });
+});
+
+// 5. PUT /api/v1/veiculos/:id - Substituir todos os dados de um veiculo (Exercicio 07)
+app.put('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { placa, montadora, modelo, status } = req.body;
+    const index = veiculos.findIndex(v => v.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    if (!placa || !montadora || !modelo || !status) {
+        return res.status(400).json({ erro: "Todos os campos sao obrigatorios para o PUT." });
+    }
+
+    veiculos[index] = { id, placa, montadora, modelo, status: status.toUpperCase() };
+    res.status(200).json(veiculos[index]);
+});
+
+// 6. DELETE /api/v1/veiculos/:id - Remover veiculo da frota
+app.delete('/api/v1/veiculos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = veiculos.findIndex(v => v.id === id);
+    if (index === -1) {
+        return res.status(404).json({ erro: "Veiculo nao encontrado." });
+    }
+    veiculos.splice(index, 1);
+    res.status(200).json({ mensagem: `Veiculo ID ${id} removido com sucesso.` });
+});
+
+app.listen(PORT, () => {
+    console.log(`[Binario Tech] API de Frotas rodando em http://localhost:${PORT}`);
+});
