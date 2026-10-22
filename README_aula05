@@ -45,6 +45,271 @@ e por ultimo a app.js.
 
 ---------------------------------------------------------------
 
+3. Implementação dos Middlewares
+
+middlewares/logger.js:
+
+function loggerMiddleware(req, res, next) {
+    const inicio = Date.now();
+    const timestamp = new Date().toISOString();
+    
+    res.on('finish', () => {
+        const duracao = Date.now() - inicio;
+        console.log(`[LOG ${timestamp}] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} (${duracao}ms)`);
+    });
+    
+    next();
+}
+
+module.exports = loggerMiddleware;
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+middlewares/auth.js:
+
+function authMiddleware(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    const CHAVE_VALIDA = "binario-tech-secret-2026";
+
+    if (!apiKey || apiKey !== CHAVE_VALIDA) {
+        return res.status(401).json({
+            erro: "Acesso nao autorizado. Header 'X-API-KEY' invalido ou ausente."
+        });
+    }
+
+    next();
+}
+
+module.exports = authMiddleware;
+
+-----------------------------------------------------------------------------------------------
+
+middlewares/validaCnh.js:
+
+function validaCnh(req, res, next) {
+    const { cnh } = req.body;
+    const regexCnh = /^\d{11}$/;
+
+    if (!cnh || !regexCnh.test(cnh)) {
+        return res.status(400).json({
+            erro: "Validacao falhou: A CNH deve conter exatamente 11 digitos numericos."
+        });
+    }
+
+    next();
+}
+
+module.exports = validaCnh;
+
+-------------------------------------------------------------------------------------------------------------
+
+4. Implementação das Rotas (Express Router)
+
+const express = require('express');
+const router = express.Router();
+const validaCnh = require('../middlewares/validaCnh');
+
+let motoristas = [
+    { id: 1, nome: "Carlos Silva", cnh: "12345678900", categoria: "E", ativo: true },
+    { id: 2, nome: "Ana Pereira", cnh: "98765432100", categoria: "D", ativo: true }
+];
+
+// GET /api/v1/motoristas
+router.get('/', (req, res) => {
+    res.status(200).json(motoristas);
+});
+
+// POST /api/v1/motoristas (Aplicando validacao de CNH exclusiva nesta rota)
+router.post('/', validaCnh, (req, res) => {
+    const { nome, cnh, categoria } = req.body;
+
+    if (!nome || !categoria) {
+        return res.status(400).json({ erro: "Campos 'nome' e 'categoria' sao obrigatorios." });
+    }
+
+    const novoMotorista = {
+        id: motoristas.length + 1,
+        nome,
+        cnh,
+        categoria,
+        ativo: true
+    };
+
+    motoristas.push(novoMotorista);
+    res.status(201).json(novoMotorista);
+});
+
+module.exports = router;
+
+--------------------------------------------------------------------------------------------------------------
+
+routes/manutencoes.js
+
+const express = require('express');
+const router = express.Router();
+
+let manutencoes = [
+    { id: 1, veiculoId: 1, descricao: "Troca de oleo", custo: 1200.00, status: "CONCLUIDO" }
+];
+
+// GET /api/v1/manutencoes
+router.get('/', (req, res) => {
+    res.status(200).json(manutencoes);
+});
+
+// POST /api/v1/manutencoes
+router.post('/', (req, res) => {
+    const { veiculoId, descricao, custo, status } = req.body;
+
+    if (!veiculoId || !descricao || !custo || !status) {
+        return res.status(400).json({ erro: "Todos os campos sao obrigatorios." });
+    }
+
+    const novaManutencao = {
+        id: manutencoes.length + 1,
+        veiculoId,
+        descricao,
+        custo,
+        status: status.toUpperCase()
+    };
+
+    manutencoes.push(novaManutencao);
+    res.status(201).json(novaManutencao);
+});
+
+module.exports = router;
+
+----------------------------------------------------------------------------------------------------
+
+5. Aplicação Principal
+
+app.js:
+
+const express = require('express');
+const cors = require('cors');
+const loggerMiddleware = require('./middlewares/logger');
+const authMiddleware = require('./middlewares/auth');
+const motoristasRouter = require('./routes/motoristas');
+const manutencoesRouter = require('./routes/manutencoes');
+
+const app = express();
+const PORT = 3000;
+
+// Middlewares Globais
+app.use(cors());
+app.use(express.json());
+app.use(loggerMiddleware);
+
+// Rota Pública de Health Check
+app.get('/api/v1/health', (req, res) => {
+    res.status(200).json({ status: "ONLINE", aplicacao: "Binario Tech API v2" });
+});
+
+// Rotas Protegidas por Autenticação (X-API-KEY)
+app.use('/api/v1/motoristas', authMiddleware, motoristasRouter);
+app.use('/api/v1/manutencoes', authMiddleware, manutencoesRouter);
+
+// Tratamento Global de Erros (404 - Rota Não Encontrada)
+app.use((req, res) => {
+    res.status(404).json({ erro: "Endpoint nao encontrado no servidor Binario Tech." });
+});
+
+app.listen(PORT, () => {
+    console.log(`[Binario Tech] Servidor ativo na porta ${PORT}`);
+});
+
+---------------------------------------------------------------------------------------------------
+
+6. Testes Manuais via cURL (Com Tratamento de Erros)
+
+Iniciar o Servidor
+
+node app.js &
+
+-------------------------------------------------------------
+
+Testar Health Check (Pública):
+curl -s http://localhost:3000/api/v1/health | jq .
+
+--------------------------------------------------------------
+
+Testar Acesso Negado (Sem API Key -> Esperado 401):
+curl -i http://localhost:3000/api/v1/motoristas
+
+---------------------------------------------------------------------------------------------------
+
+Testar Acesso Autorizado (Com API Key válida -> Esperado 200):
+curl -s -H "X-API-KEY: binario-tech-secret-2026" http://localhost:3000/api/v1/motoristas | jq .
+
+-----------------------------------------------------------------------
+
+Testar Validação de CNH Inválida (< 11 dígitos -> Esperado 400):
+curl -i -X POST http://localhost:3000/api/v1/motoristas \
+  -H "X-API-KEY: binario-tech-secret-2026" \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Teste Fail","cnh":"123","categoria":"A"}'
+
+--------------------------------------------------------------
+
+Testar Erro 404 (Rota inexistente):
+curl -i http://localhost:3000/api/v1/rota-que-nao-existe
+
+-------------------------------------------------------------------------------------------------------------
+
+7. Script de Auditoria Bash
+
+teste_seguranca.sh:
+
+#!/bin/bash
+echo "==================================================" > audit_seguranca.log
+echo "  AUDITORIA DE SEGURANCA - BINARIO TECH           " >> audit_seguranca.log
+echo "  Data/Hora: $(date)                              " >> audit_seguranca.log
+echo "==================================================" >> audit_seguranca.log
+
+echo -e "\n[TESTE 1] Acesso sem API Key (Esperado: 401)" >> audit_seguranca.log
+curl -i http://localhost:3000/api/v1/motoristas >> audit_seguranca.log
+
+echo -e "\n\n[TESTE 2] CNH Invalida < 11 digitos (Esperado: 400)" >> audit_seguranca.log
+curl -i -X POST http://localhost:3000/api/v1/motoristas \
+  -H "X-API-KEY: binario-tech-secret-2026" \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Erro CNH","cnh":"123","categoria":"B"}' >> audit_seguranca.log
+
+echo -e "\n\n[TESTE 3] Rota Inexistente (Esperado: 404)" >> audit_seguranca.log
+curl -i http://localhost:3000/api/v1/inexistente >> audit_seguranca.log
+
+echo -e "\n\n[TESTE 4] Acesso Valido e Cadastro OK (Esperado: 201)" >> audit_seguranca.log
+curl -i -X POST http://localhost:3000/api/v1/motoristas \
+  -H "X-API-KEY: binario-tech-secret-2026" \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Juliana Martins","cnh":"11122233344","categoria":"D"}' >> audit_seguranca.log
+
+echo -e "\n--------------------------------------------------" >> audit_seguranca.log
+echo "Auditoria concluida com sucesso!" >> audit_seguranca.log
+
+Comandos para rodar o script:
+
+chmod +x teste_seguranca.sh
+./teste_seguranca.sh
+cat audit_seguranca.log
+
+------------------------------------------------------------------------------------------------------------------
+
+8. Gerenciamento de Processos no Linux:
+
+ps aux | grep node
+kill -9 <PID>
+
+O PID fica Após o usuario.
+
+
+
+
+
+
+
+
+
 
 
 
