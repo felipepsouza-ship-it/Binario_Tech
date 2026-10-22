@@ -1,0 +1,51 @@
+Guia de estudos cheat sheet completo para o desenvolvimento da API modularizada com Express, autenticação por API Key, validação de CNH e auditoria via Bash.
+
+1. Preparação do Ambiente.
+2. Estrutura de Pastas.
+3. Implementação dos Middlewares.
+4. Implementação das Rotas (Express Router).
+5. Aplicação Principal (`app.js`).
+6. Testes Manuais via cURL (Com Tratamento de Erros).
+7. Script de Auditoria Bash (`teste_seguranca.sh`).
+8. Gerenciamento de Processos no Linux.
+
+------------------------------------------------------------
+
+1. Preparação do Ambiente
+
+No terminal do servidor Debian, execute os comandos para criar a estrutura e instalar as dependências:
+
+bash
+cd ~/binario_tech
+mkdir -p prova_aula05/routes prova_aula05/middlewares
+cd prova_aula05
+npm init -y
+npm install express cors
+
+------------------------------------------------------------------------------------------------------------
+
+2. Estrutura das pastas 
+
+prova_aula05/
+├── package.json
+├── app.js 
+├── routes/ 
+│   ├── motoristas.js
+│   └── manutencoes.js
+├── middlewares/
+│   ├── logger.js
+│   ├── auth.js
+│   └── validaCnh.js
+└── teste_seguranca.sh
+
+Crie primeiro a pasta prova_aula05 depois o routes, 
+e dentro de routes adcione motoristas.js e manutençoes.js,
+no middlewares coloque logger.js, auth.js, validaCnh.js
+e por ultimo a app.js.
+
+---------------------------------------------------------------
+
+
+
+
+
