@@ -105,6 +105,8 @@ module.exports = validaCnh;
 
 4. Implementação das Rotas (Express Router)
 
+motoristas.js:
+
 const express = require('express');
 const router = express.Router();
 const validaCnh = require('../middlewares/validaCnh');
@@ -195,21 +197,21 @@ const manutencoesRouter = require('./routes/manutencoes');
 const app = express();
 const PORT = 3000;
 
-// Middlewares Globais
+
 app.use(cors());
 app.use(express.json());
 app.use(loggerMiddleware);
 
-// Rota Pública de Health Check
+
 app.get('/api/v1/health', (req, res) => {
     res.status(200).json({ status: "ONLINE", aplicacao: "Binario Tech API v2" });
 });
 
-// Rotas Protegidas por Autenticação (X-API-KEY)
+
 app.use('/api/v1/motoristas', authMiddleware, motoristasRouter);
 app.use('/api/v1/manutencoes', authMiddleware, manutencoesRouter);
 
-// Tratamento Global de Erros (404 - Rota Não Encontrada)
+
 app.use((req, res) => {
     res.status(404).json({ erro: "Endpoint nao encontrado no servidor Binario Tech." });
 });
@@ -261,31 +263,35 @@ curl -i http://localhost:3000/api/v1/rota-que-nao-existe
 teste_seguranca.sh:
 
 #!/bin/bash
-echo "==================================================" > audit_seguranca.log
-echo "  AUDITORIA DE SEGURANCA - BINARIO TECH           " >> audit_seguranca.log
-echo "  Data/Hora: $(date)                              " >> audit_seguranca.log
-echo "==================================================" >> audit_seguranca.log
 
-echo -e "\n[TESTE 1] Acesso sem API Key (Esperado: 401)" >> audit_seguranca.log
-curl -i http://localhost:3000/api/v1/motoristas >> audit_seguranca.log
+# Cria ou limpa o arquivo de log no início da execução
+LOG_FILE="resultado.log"
+echo "=== INÍCIO DOS TESTES DE SEGURANÇA ===" > "$LOG_FILE"
 
-echo -e "\n\n[TESTE 2] CNH Invalida < 11 digitos (Esperado: 400)" >> audit_seguranca.log
-curl -i -X POST http://localhost:3000/api/v1/motoristas \
+echo "1. Testando Health Check..." | tee -a "$LOG_FILE"
+curl -s -i http://localhost:3000/api/v1/health | tee -a "$LOG_FILE"
+echo -e "\n----------------------------------------\n" >> "$LOG_FILE"
+
+echo "2. Testando Acesso Negado (Sem API Key)..." | tee -a "$LOG_FILE"
+curl -s -i http://localhost:3000/api/v1/motoristas | tee -a "$LOG_FILE"
+echo -e "\n----------------------------------------\n" >> "$LOG_FILE"
+
+echo "3. Testando Sucesso com API Key..." | tee -a "$LOG_FILE"
+curl -s -i -H "X-API-KEY: binario-tech-secret-2026" http://localhost:3000/api/v1/motoristas | tee -a "$LOG_FILE"
+echo -e "\n----------------------------------------\n" >> "$LOG_FILE"
+
+echo "4. Testando Validação de CNH Inválida (400 Bad Request)..." | tee -a "$LOG_FILE"
+curl -s -i -X POST http://localhost:3000/api/v1/motoristas \
   -H "X-API-KEY: binario-tech-secret-2026" \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Erro CNH","cnh":"123","categoria":"B"}' >> audit_seguranca.log
+  -d '{"nome":"Teste Fail","cnh":"123","categoria":"A"}' | tee -a "$LOG_FILE"
+echo -e "\n----------------------------------------\n" >> "$LOG_FILE"
 
-echo -e "\n\n[TESTE 3] Rota Inexistente (Esperado: 404)" >> audit_seguranca.log
-curl -i http://localhost:3000/api/v1/inexistente >> audit_seguranca.log
+echo "5. Testando Rota Inexistente (404 Not Found)..." | tee -a "$LOG_FILE"
+curl -s -i http://localhost:3000/api/v1/rota-que-nao-existe | tee -a "$LOG_FILE"
+echo -e "\n=== FIM DOS TESTES ===" >> "$LOG_FILE"
 
-echo -e "\n\n[TESTE 4] Acesso Valido e Cadastro OK (Esperado: 201)" >> audit_seguranca.log
-curl -i -X POST http://localhost:3000/api/v1/motoristas \
-  -H "X-API-KEY: binario-tech-secret-2026" \
-  -H "Content-Type: application/json" \
-  -d '{"nome":"Juliana Martins","cnh":"11122233344","categoria":"D"}' >> audit_seguranca.log
-
-echo -e "\n--------------------------------------------------" >> audit_seguranca.log
-echo "Auditoria concluida com sucesso!" >> audit_seguranca.log
+echo -e "\nTestes finalizados! Todos os resultados foram salvos em '$LOG_FILE'."
 
 Comandos para rodar o script:
 
@@ -302,6 +308,11 @@ kill -9 <PID>
 
 O PID fica Após o usuario.
 
+-----------------------------------------------------
+
+ERROS: 
+
+Nao colocar o nome do arquivo de validarCnh.js com r no final
 
 
 
