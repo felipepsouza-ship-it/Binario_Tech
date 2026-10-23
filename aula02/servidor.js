@@ -40,3 +40,13 @@ app.get('/vw/info', (req, res) => {
 });
 
 //-------------------------------------------------------------------------------
+
+// Rota de Informacoes da Montadora Volkswagen
+app.get('/vw/info', (req, res) => {
+    res.json({
+        montadora: "Volkswagen",
+        foco: "Comerciais Leves e Caminhoes",
+        sistema_telemetria: "Ativo",
+        unidades_conectadas: 980
+    });
+});
